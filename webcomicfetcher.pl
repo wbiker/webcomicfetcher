@@ -132,8 +132,8 @@ if($anyisnew)
 		Data => $body
 	) or die "Error adding body: $!\n";
 	print "send mail.\n";
-	$mail->send('smtp', 'mail.gmx.de', AuthUser=>'wbiker@gmx.at', AuthPass=>'IlBs1997');
-#	$mail->send('smtp', 'mail.gmx.de', AuthUser=>'wbiker@gmx.at', AuthPass=>'IlBs1997', Debug => 1);
+	$mail->send('smtp', 'mail.gmx.de', AuthUser=>'wbiker@gmx.at', AuthPass=>'password');
+#	$mail->send('smtp', 'mail.gmx.de', AuthUser=>'wbiker@gmx.at', AuthPass=>'password', Debug => 1);
 }
 
 #print Dumper @fetchComics;
