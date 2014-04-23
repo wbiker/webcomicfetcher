@@ -12,6 +12,16 @@ use MIME::Lite;
 use MIME::Base64;
 use Authen::SASL;
 
+use Email::Stuffer;
+use Email::Sender::Transport::SMTPS;
+ 
+my $transport = Email::Sender::Transport::SMTPS->new(
+    host => 'smtp.gmx.net',
+    ssl  => 'starttls',
+    sasl_username => 'wbiker@gmx.at',
+    sasl_password => 'IlBs1997',
+                 );
+
 #use Data::Dumper;
 
 # in this hash I store the name of the has file and the content of each of them.
@@ -63,12 +73,10 @@ my $anyisnew = 0;
 my $body;
 
 #initialize email object
-my $mail = MIME::Lite->new(
-		From => 'wbiker@gmx.at',
-		To => 'wolfgang.banaston@gmail.com,thomas.reisinger@jku.at,armin.praher@sophos.com',
-		Subject => 'Webcomics',
-		Type => 'multipart/mixed'
-	) or die "Error creating multipart container: $!\n";
+my $mail = Email::Stuffer->new;
+$mail->to('wolfgang.banaston@gmail.com,thomas.reisinger@jku.at,armin.praher@sophos.com');
+$mail->from('wbiker@gmx.at');
+$mail->subject('Webcomics');
 
 #print Dumper @fetchComics;
 # 0 = url 
@@ -114,11 +122,11 @@ foreach my $wc (@fetchComics) {
 				if($title) {
 					$body = $body." @{$wc}[0]\n$title\n\n";
 				}
-				$mail->attach(
-					Type => 'image/png',
-					Path => "$hashFileName.png",
-					Filename => "$hashFileName.png",
-					Disposition => 'attachment'
+				$mail->attach_file(
+				#	Type => 'image/png',
+				#	Path => "$hashFileName.png",
+					"$hashFileName.png",
+				#	Disposition => 'attachment'
 				) or die "Error adding @{$wc}[0] comic: $!\n";
 			}
 		}
@@ -127,13 +135,10 @@ foreach my $wc (@fetchComics) {
 
 if($anyisnew)
 {
-	$mail->attach(
-		Type => 'TEXT',
-		Data => $body
-	) or die "Error adding body: $!\n";
+	$mail->text_body($body);
+    $mail->transport($transport);
 	print "send mail.\n";
-	$mail->send('smtp', 'mail.gmx.de', AuthUser=>'wbiker@gmx.at', AuthPass=>'password');
-#	$mail->send('smtp', 'mail.gmx.de', AuthUser=>'wbiker@gmx.at', AuthPass=>'password', Debug => 1);
+	$mail->send;
 }
 
 #print Dumper @fetchComics;
