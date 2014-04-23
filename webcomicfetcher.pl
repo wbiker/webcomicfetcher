@@ -65,7 +65,7 @@ my $body;
 #initialize email object
 my $mail = MIME::Lite->new(
 		From => 'wbiker@gmx.at',
-		To => 'wolfgang.banaston@gmail.com,thomas.reisinger@jku.at',
+		To => 'wolfgang.banaston@gmail.com,thomas.reisinger@jku.at,armin.praher@sophos.com',
 		Subject => 'Webcomics',
 		Type => 'multipart/mixed'
 	) or die "Error creating multipart container: $!\n";
