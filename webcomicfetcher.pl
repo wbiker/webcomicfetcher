@@ -19,7 +19,7 @@ my $transport = Email::Sender::Transport::SMTPS->new(
     host => 'smtp.gmx.net',
     ssl  => 'starttls',
     sasl_username => 'wbiker@gmx.at',
-    sasl_password => 'IlBs1997',
+    sasl_password => 'password',
                  );
 
 #use Data::Dumper;
