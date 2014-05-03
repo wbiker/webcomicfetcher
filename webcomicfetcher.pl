@@ -4,18 +4,20 @@
 use strict;
 use warnings;
 
-use LWP::Simple;
-use File::Slurp;
+use Storable qw(store retrieve);
+
+use LWP::Simple; # for doenloading the images
+use File::Slurp; # for reading the hash-files
 use utf8;
 
-
-use Email::Stuffer;
-use Email::Sender::Transport::SMTPS;
-use Authen::SASL;
-use MIME::Base64;
-use IO::Socket::SSL;
-use WWW::xkcd;
-use IO::All;
+use Email::Stuffer; # for sending email
+use Email::Sender::Transport::SMTPS; # for sending email
+use Authen::SASL; # for sending email
+use MIME::Base64; # for sending email
+use IO::Socket::SSL; # for sending email
+use WWW::xkcd; # for download image and meta data from the xkcd web side
+use IO::All; # for storing image in a file.
+use YAML::Any qw(DumpFile LoadFile);
  
 my $transport = Email::Sender::Transport::SMTPS->new(
     host => 'smtp.gmx.net',
@@ -25,9 +27,7 @@ my $transport = Email::Sender::Transport::SMTPS->new(
     SSL_verify_mode => SSL_VERIFY_NONE,
                  );
 
-#use Data::Dumper;
-
-# in this hash I store the name of the has file and the content of each of them.
+# in this hash I store the name of the hash file and the content of each of them.
 # I go through the hash and if the file exists I store the content in the hash.
 # later then if I have got the url of the current comic I compare this with the content of the particular file
 # If it matches I do nothing, if differs I send this comic.
@@ -38,28 +38,15 @@ my %urlFiles = (
 	hashsmbc => "unknown",
 );
 
-# Look for each file and read content (aka comix url from the last fetched comic)
-foreach my $hashFile (keys %urlFiles) {
-	if( -e $hashFile ) {
-		open my $FH, "<", $hashFile;
-		$urlFiles{$hashFile} = <$FH>;
-		close($FH);
-		chomp($urlFiles{$hashFile});
-	}
-}
-
-#print Dumper %urlFiles;
+# read in the image urls of the last run and store them.
+my $ufs = LoadFile('comics.yaml');
+$urlFiles{$_} = $ufs->{$_} for keys %{$ufs};
 
 my @fetchComics = (
 	[
 		"http://www.abstrusegoose.com",	# the root url of the comic
 		qw((http://abstrusegoose.com/strips/.*png).*title="(.*)"), # the regex pattern to search the comic url
 		"hashAbstruseGoose",	# the file name of the url file. In this file is the url written and with the extension .png it descripts the comic file name.
-	],
-	[
-		"http://www.xkcd.com",
-		q(<img src="(http://imgs.xkcd.com/comics/.*png)".*title="(.*)" alt),
-		"hashxkcd"
 	],
 	[
 		"http://www.apenotmonkey.com/",
@@ -81,41 +68,35 @@ $mail->to('wolfgang.banaston@gmail.com,thomas.reisinger@jku.at,armin.praher@soph
 $mail->from('wbiker@gmx.at');
 $mail->subject('Webcomics');
 
+# for xkcd I have got the great WWW::xkcd module.
+my $xkcd = WWW::xkcd->new;
+my ($pic, $meta) = $xkcd->fetch;
+
+   my $hashFileName = $meta->{img};
+if($urlFiles{hashxkcd} ne $hashFileName) {
+    print "New xkcd comic\n";
+	$anyisnew = 1;
+	$body .= "xkcd\n".$meta->{title}."\n".$meta->{alt}."\n\n";
+	$pic > io('hashxkcd.png');
+	$mail->attach_file('hashxkcd.png') or die "Error adding xkcd comic: $!\n";
+			
+	# store image url for future runs.
+	$urlFiles{'hashxkcd'} = $meta->{img};
+}
+
 #print Dumper @fetchComics;
 # 0 = url 
 # 1 = regex pattern
 # 2 = the name of the url file.
 my $failed = undef;
 foreach my $wc (@fetchComics) {
-
-	# for xkcd I have got the great WWW::xkcd module.
-	if($wc->[2] =~ /hashxkcd/) {
-		my $xkcd = WWW::xkcd->new;
-		my ($pic, $meta) = $xkcd->fetch;
-
-		my $hashFileName = $meta->{img};
-		if($urlFiles{hashxkcd} ne $hashFileName) {
-			$anyisnew = 1;
-			$body .= "xkcd\n".$meta->{title}."\n".$meta->{alt}."\n\n";
-			$pic > io('hashxkcd.png');
-			$mail->attach_file('hashxkcd.png') or die "Error adding xkcd comic: $!\n";
-			
-			# store image url for future runs.
-			open my $ofh, ">", 'hashxkcd';;
-			print $ofh $meta->{img};
-			close($ofh);
-		}
-
-		next;
-	}
-
 	my $lines = get($wc->[0]) or $failed = 1;
 	if($failed) {
 		$failed = undef;
 		print $wc->[0], " failed to download. Try it with wget again!\n";
 		my $ret = system("wget -O localWebPage ".$wc->[0]);
 		if(0 == $ret) {
-			$lines = read_file("localWebPage");
+			$lines = io("localWebPage")->slurp;
 			unlink("localWebPage");
 		}
 		else {
@@ -138,10 +119,11 @@ foreach my $wc (@fetchComics) {
 				$anyisnew = 1;
 				my $command = "wget -O $hashFileName.png ".$desiredPic;
 				print $command;
-				system($command);
-				open my $ofh, ">", $hashFileName;
-				print $ofh $desiredPic;
-				close($ofh);
+				
+                system($command); # use wget to fetch comic
+
+                # store the new image url in the hash. Hash is stored in a file at the end of the script.
+                $urlFiles{$hashFileName} = $desiredPic;
 				
 				# attach to email
 				if($title) {
@@ -163,7 +145,9 @@ if($anyisnew)
 	$mail->text_body($body);
     $mail->transport($transport);
 	print "send mail.\n";
-	$mail->send_or_die();
+#	$mail->send_or_die();
 }
+
+DumpFile('comics.yaml', \%urlFiles);
 
 #print Dumper @fetchComics;
