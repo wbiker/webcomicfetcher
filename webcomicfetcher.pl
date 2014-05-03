@@ -8,18 +8,21 @@ use LWP::Simple;
 use File::Slurp;
 use utf8;
 
-use MIME::Lite;
-use MIME::Base64;
-use Authen::SASL;
 
 use Email::Stuffer;
 use Email::Sender::Transport::SMTPS;
+use Authen::SASL;
+use MIME::Base64;
+use IO::Socket::SSL;
+use WWW::xkcd;
+use IO::All;
  
 my $transport = Email::Sender::Transport::SMTPS->new(
     host => 'smtp.gmx.net',
     ssl  => 'starttls',
     sasl_username => 'wbiker@gmx.at',
     sasl_password => 'password',
+    SSL_verify_mode => SSL_VERIFY_NONE,
                  );
 
 #use Data::Dumper;
@@ -84,6 +87,28 @@ $mail->subject('Webcomics');
 # 2 = the name of the url file.
 my $failed = undef;
 foreach my $wc (@fetchComics) {
+
+	# for xkcd I have got the great WWW::xkcd module.
+	if($wc->[2] =~ /hashxkcd/) {
+		my $xkcd = WWW::xkcd->new;
+		my ($pic, $meta) = $xkcd->fetch;
+
+		my $hashFileName = $meta->{img};
+		if($urlFiles{hashxkcd} ne $hashFileName) {
+			$anyisnew = 1;
+			$body .= "xkcd\n".$meta->{title}."\n".$meta->{alt}."\n\n";
+			$pic > io('hashxkcd.png');
+			$mail->attach_file('hashxkcd.png') or die "Error adding xkcd comic: $!\n";
+			
+			# store image url for future runs.
+			open my $ofh, ">", 'hashxkcd';;
+			print $ofh $meta->{img};
+			close($ofh);
+		}
+
+		next;
+	}
+
 	my $lines = get($wc->[0]) or $failed = 1;
 	if($failed) {
 		$failed = undef;
@@ -138,7 +163,7 @@ if($anyisnew)
 	$mail->text_body($body);
     $mail->transport($transport);
 	print "send mail.\n";
-	$mail->send;
+	$mail->send_or_die();
 }
 
 #print Dumper @fetchComics;
