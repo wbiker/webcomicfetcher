@@ -19,11 +19,15 @@ use WWW::xkcd; # for download image and meta data from the xkcd web side
 use IO::All; # for storing image in a file.
 use YAML::Any qw(DumpFile LoadFile);
  
+use Mojo::UserAgent;
+
+my $credentials = retrieve('credentials');
+
 my $transport = Email::Sender::Transport::SMTPS->new(
     host => 'smtp.gmx.net',
     ssl  => 'starttls',
-    sasl_username => 'email',
-    sasl_password => 'pass',
+    sasl_username => $credentials->{email},
+    sasl_password => $credentials->{pass},
     SSL_verify_mode => SSL_VERIFY_NONE,
                  );
 
