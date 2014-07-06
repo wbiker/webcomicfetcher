@@ -22,8 +22,8 @@ use YAML::Any qw(DumpFile LoadFile);
 my $transport = Email::Sender::Transport::SMTPS->new(
     host => 'smtp.gmx.net',
     ssl  => 'starttls',
-    sasl_username => 'wbiker@gmx.at',
-    sasl_password => 'password',
+    sasl_username => 'email',
+    sasl_password => 'pass',
     SSL_verify_mode => SSL_VERIFY_NONE,
                  );
 
@@ -39,8 +39,10 @@ my %urlFiles = (
 );
 
 # read in the image urls of the last run and store them.
-my $ufs = LoadFile('comics.yaml');
-$urlFiles{$_} = $ufs->{$_} for keys %{$ufs};
+eval {
+	my $ufs = LoadFile('comics.yaml');
+	$urlFiles{$_} = $ufs->{$_} for keys %{$ufs};
+};
 
 my @fetchComics = (
 	[
@@ -60,7 +62,7 @@ my @fetchComics = (
 	],
 );
 my $anyisnew = 0;
-my $body;
+my $body = "Comics:\n";
 
 #initialize email object
 my $mail = Email::Stuffer->new;
@@ -143,9 +145,9 @@ foreach my $wc (@fetchComics) {
 if($anyisnew)
 {
 	$mail->text_body($body);
-    $mail->transport($transport);
+ 	$mail->transport($transport);
 	print "send mail.\n";
-#	$mail->send_or_die();
+	$mail->send_or_die();
 }
 
 DumpFile('comics.yaml', \%urlFiles);
