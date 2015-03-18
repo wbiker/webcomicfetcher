@@ -61,7 +61,7 @@ my @fetchComics = (
 	],
 	[
 		"http://www.smbc-comics.com/",
-		'div#comicimage img',
+		'img#comic',
 		"hashsmbc",
 	],
 );
@@ -109,6 +109,9 @@ foreach my $wc (@fetchComics) {
 		my $img = $dom->find($wc->[1])->first;
         if($img) {
 			my $desiredPic = $img->attr('src');
+			if($wc->[0] =~ /smbc/i) {
+				$desiredPic = $wc->[0] . $desiredPic;
+			}
     		if($urlFiles{$hashFileName} ne $desiredPic) {
    	            # new pic 
 				$anyisnew = 1;
