@@ -19,6 +19,18 @@ use YAML::Any qw(DumpFile LoadFile);
  
 use Mojo::UserAgent;
 
+use ExplainXkcd;
+
+if(! -e 'credentials.yaml') {
+	my $conf = {
+	email => 'dummy@gmx.at',
+	pass => '1234',
+	};
+
+	DumpFile('credentials.yaml', $conf);
+	print "No credentials file found. Create it. Enter email data.\n";
+	exit;
+}
 my $credentials = LoadFile('credentials.yaml');
 my $email = $credentials->{email};
 my $password = $credentials->{pass};
@@ -139,6 +151,16 @@ foreach my $wc (@fetchComics) {
         	}
 		}
 	}
+}
+
+my $explain_xkcd = ExplainXkcd->new;
+my ($image, $title, $paragraphs) = $explain_xkcd->fetch;
+
+if($image) {
+	$anyisnew = 1;
+	$body = $body." Explain xkcd\n$title\n$paragraphs\n";
+
+	$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 }
 
 if($anyisnew)
