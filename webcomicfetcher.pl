@@ -94,7 +94,7 @@ my $hashFileName = $meta->{img};
 if($urlFiles{hashxkcd} ne $hashFileName) {
     print "New xkcd comic\n";
 	$anyisnew = 1;
-	$body .= "xkcd\n".$meta->{title}."\n".$meta->{alt}."\n\n";
+	$body .= "xkcd<br>".$meta->{title}."<br>".$meta->{alt}."<br><br>";
 	$pic > io('hashxkcd.png');
 	$mail->attach_file('hashxkcd.png') or die "Error adding xkcd comic: $!\n";
 			
@@ -137,10 +137,10 @@ foreach my $wc (@fetchComics) {
 				# attach to email
 				my $title = $img->attr('title');
 				if($title) {
-					$body = $body." @{$wc}[0]\n$title\n\n";
+					$body = $body." @{$wc}[0]<br>$title<br><br>";
 				}
 				else {
-					$body = $body." @{$wc}[0]\nNo title\n\n";
+					$body = $body." @{$wc}[0]<br>No title<br><br>";
 				}
 				$mail->attach_file(
 				#	Type => 'image/png',
@@ -158,14 +158,14 @@ my ($image, $title, $paragraphs) = $explain_xkcd->fetch;
 
 if($image) {
 	$anyisnew = 1;
-	$body = $body." Explain xkcd\n$title\n$paragraphs\n";
+	$body = $body." Explain xkcd<br>$title<br>$paragraphs<br>";
 
 	$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 }
 
 if($anyisnew)
 {
-	$mail->text_body($body);
+	$mail->html_body($body);
  	$mail->transport($transport);
 	print "send mail.\n";
 	$mail->send_or_die();
@@ -211,7 +211,7 @@ sub parse_html {
 				
 				# attach to email
 				if($title) {
-					$body = $body." @{$wc}[0]\n$title\n\n";
+					$body = $body." @{$wc}[0]<br>$title<br>";
 				}
 				$mail->attach_file(
 				#	Type => 'image/png',
