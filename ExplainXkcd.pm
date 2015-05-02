@@ -45,6 +45,7 @@ sub fetch {
 
 	my $ua = Mojo::UserAgent->new;
 	my $response;
+	my $image_url;
 	$response = $ua->get($self->{url});
 	if(!$response->success) {
 		say "Get failed";
@@ -68,16 +69,15 @@ sub fetch {
 		});
 
 		if($last_url ne $image_url) {
+			say "last '$last_url'";
+			say "now  '$image_url'";
 			say "image url $image_url";
 			my $command = "wget -O explainxkcd.png ".$image_url;
 			system($command);
-
-			$last_comic_urls->{hashexplainxkcd} = $image_url;
-			DumpFile('comics.yaml', $last_comic_urls);
+			return ("explainxkcd.png", $image_title, $explain_paragraphs, $image_url);
 		}
-
-		return ("explainxkcd.png", $image_title, $explain_paragraphs);
 	}
+	return;
 }
 
 1;

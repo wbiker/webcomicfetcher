@@ -154,13 +154,14 @@ foreach my $wc (@fetchComics) {
 }
 
 my $explain_xkcd = ExplainXkcd->new;
-my ($image, $title, $paragraphs) = $explain_xkcd->fetch;
+my ($image, $title, $paragraphs, $image_url) = $explain_xkcd->fetch;
 
 if($image) {
 	$anyisnew = 1;
-	$body = $body." Explain xkcd<br>$title<br>$paragraphs<br>";
+	$body = $body." http://www.explainxkcd.com<br>$title<br>$paragraphs<br>";
 
-	$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
+	#$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
+	$urlFiles{hashexplainxkcd} = $image_url;
 }
 
 if($anyisnew)
