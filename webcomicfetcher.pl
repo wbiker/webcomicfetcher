@@ -7,6 +7,7 @@ use warnings;
 use LWP::Simple; # for doenloading the images
 use File::Slurp; # for reading the hash-files
 use utf8;
+use Data::Printer;
 
 use Email::Stuffer; # for sending email
 use Email::Sender::Transport::SMTPS; # for sending email
@@ -76,6 +77,11 @@ my @fetchComics = (
 		'img#comic',
 		"hashsmbc",
 	],
+	[
+		"http://www.commitstrip.com/en/",
+		'a[href*="http://www.commitstrip.com/wp-content/uploads"]',
+		"hashcommitstrip",
+	],
 );
 my $anyisnew = 0;
 my $body = "Comics:\n";
@@ -111,6 +117,9 @@ my $ua = Mojo::UserAgent->new;
 foreach my $wc (@fetchComics) {
 	my $response;
     $hashFileName = $wc->[2];
+	# if new the hashFIleName does not exists in $urlFiles. Then create it
+	$urlFiles{$hashFileName} = "unknown" unless exists $urlFiles{$hashFileName};
+
 	$response = $ua->get($wc->[0]) or $failed = 1;
 	if(!$response->success) {
 		parse_html($response->res->body);
@@ -123,6 +132,9 @@ foreach my $wc (@fetchComics) {
 			my $desiredPic = $img->attr('src');
 			if($wc->[0] =~ /smbc/i) {
 				$desiredPic = $wc->[0] . $desiredPic;
+			}
+			elsif($wc->[0] =~ /commitstrip/i) {
+				$desiredPic = $img->attr('href');
 			}
     		if($urlFiles{$hashFileName} ne $desiredPic) {
    	            # new pic 
