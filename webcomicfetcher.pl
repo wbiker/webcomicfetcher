@@ -97,7 +97,7 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 		$anyisnew = 1;
 		$body = $body." http://www.explainxkcd.com<br>$title<br>$paragraphs<br>";
 
-		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
+		#$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 		$urlFiles{hashexplainxkcd} = $image_url;
 	}
 }
