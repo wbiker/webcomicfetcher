@@ -106,7 +106,7 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 	my ($image, $image_url) = $commit_strip->fetch;
 	if($image) {
 		$anyisnew = 1;
-		$body = $body." http://www.commitstrip.com<br>";
+		$body = $body." http://www.commitstrip.com<br><br>";
 		$urlFiles{hashcommitstrip} = $image_url;
 		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 	}
@@ -117,7 +117,7 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 	my ($image, $image_url) = $ape_not_monkey->fetch;
 	if($image) {
 		$anyisnew = 1;
-		$body = $body." http://www.apenotmonkey.com<br>";
+		$body = $body." http://www.apenotmonkey.com<br><br>";
 		$urlFiles{hashape} = $image_url;
 		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 	}
@@ -128,7 +128,7 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 	my ($image, $image_title, $image_url) = $smbc->fetch;
 	if($image) {
 		$anyisnew = 1;
-		$body = $body." http://www.smbc-comics.com<br>$image_title<br>";
+		$body = $body." http://www.smbc-comics.com<br>$image_title<br><br>";
 		$urlFiles{hashsmbc} = $image_url;
 		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 	}
@@ -138,7 +138,7 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 	my ($image, $image_title, $image_url) = $abstruse_goose->fetch;
 	if($image) {
 		$anyisnew = 1;
-		$body = $body." http://www.abstrusegoose.com<br>$image_title<br>";
+		$body = $body." http://www.abstrusegoose.com<br>$image_title<br><br>";
 		$urlFiles{hashAbstruseGoose} = $image_url;
 		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 	}
