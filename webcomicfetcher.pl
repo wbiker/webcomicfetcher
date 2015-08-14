@@ -21,6 +21,10 @@ use YAML::Any qw(DumpFile LoadFile);
 use Mojo::UserAgent;
 
 use ExplainXkcd;
+use CommitStrip;
+use ApeNotMonkey;
+use Smbc;
+use AbstruseGoose;
 
 if(! -e 'credentials.yaml') {
 	my $conf = {
@@ -61,28 +65,6 @@ eval {
 	$urlFiles{$_} = $ufs->{$_} for keys %{$ufs};
 };
 
-my @fetchComics = (
-	[
-		"http://www.abstrusegoose.com",	# the root url of the comic
-		'img[src*="http://abstrusegoose.com/strips"]', # the regex pattern to search the comic url
-		"hashAbstruseGoose",	# the file name of the url file. In this file is the url written and with the extension .png it descripts the comic file name.
-	],
-	[
-		"http://www.apenotmonkey.com/",
-		'img[src*="http://www.apenotmonkey.com/comics"]',
-		"hashape",
-	],
-	[
-		"http://www.smbc-comics.com/",
-		'img#comic',
-		"hashsmbc",
-	],
-	[
-		"http://www.commitstrip.com/en/",
-		'a[href*="http://www.commitstrip.com/wp-content/uploads"]',
-		"hashcommitstrip",
-	],
-);
 my $anyisnew = 0;
 my $body = "Comics:\n";
 
@@ -108,72 +90,58 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 	$urlFiles{'hashxkcd'} = $meta->{img};
 }
 
-#print Dumper @fetchComics;
-# 0 = url 
-# 1 = regex pattern
-# 2 = the name of the url file.
-my $failed = undef;
-my $ua = Mojo::UserAgent->new;
-foreach my $wc (@fetchComics) {
-	my $response;
-    $hashFileName = $wc->[2];
-	# if new the hashFIleName does not exists in $urlFiles. Then create it
-	$urlFiles{$hashFileName} = "unknown" unless exists $urlFiles{$hashFileName};
+{
+	my $explain_xkcd = ExplainXkcd->new;
+	my ($image, $title, $paragraphs, $image_url) = $explain_xkcd->fetch;
+	if($image) {
+		$anyisnew = 1;
+		$body = $body." http://www.explainxkcd.com<br>$title<br>$paragraphs<br>";
 
-	$response = $ua->get($wc->[0]) or $failed = 1;
-	if(!$response->success) {
-		parse_html($response->res->body);
-	} # if not response success
-	else {
-		my $dom = $response->res->dom;
-		
-		my $img = $dom->find($wc->[1])->first;
-        if($img) {
-			my $desiredPic = $img->attr('src');
-			if($wc->[0] =~ /smbc/i) {
-				$desiredPic = $wc->[0] . $desiredPic;
-			}
-			elsif($wc->[0] =~ /commitstrip/i) {
-				$desiredPic = $img->attr('href');
-			}
-    		if($urlFiles{$hashFileName} ne $desiredPic) {
-   	            # new pic 
-				$anyisnew = 1;
-				my $command = "wget -O $hashFileName.png ".$desiredPic;
-				print $command;
-				
-   	    	    system($command); # use wget to fetch comic
-
-        		# store the new image url in the hash. Hash is stored in a file at the end of the script.
-            	$urlFiles{$hashFileName} = $desiredPic;
-				# attach to email
-				my $title = $img->attr('title');
-				if($title) {
-					$body = $body." @{$wc}[0]<br>$title<br><br>";
-				}
-				else {
-					$body = $body." @{$wc}[0]<br>No title<br><br>";
-				}
-				$mail->attach_file(
-				#	Type => 'image/png',
-				#	Path => "$hashFileName.png",
-					"$hashFileName.png",
-				#	Disposition => 'attachment'
-				) or die "Error adding @{$wc}[0] comic: $!\n";
-        	}
-		}
+		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
+		$urlFiles{hashexplainxkcd} = $image_url;
+	}
+}
+{
+	my $commit_strip = CommitStrip->new;
+	my ($image, $image_url) = $commit_strip->fetch;
+	if($image) {
+		$anyisnew = 1;
+		$body = $body." http://www.commitstrip.com";
+		$urlFiles{hashcommitstrip} = $image_url;
+		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 	}
 }
 
-my $explain_xkcd = ExplainXkcd->new;
-my ($image, $title, $paragraphs, $image_url) = $explain_xkcd->fetch;
+{
+	my $ape_not_monkey = ApeNotMonkey->new;
+	my ($image, $image_url) = $ape_not_monkey->fetch;
+	if($image) {
+		$anyisnew = 1;
+		$body = $body." http://www.apenotmonkey.com/comics";
+		$urlFiles{hashape} = $image_url;
+		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
+	}
+}
 
-if($image) {
-	$anyisnew = 1;
-	$body = $body." http://www.explainxkcd.com<br>$title<br>$paragraphs<br>";
-
-	#$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
-	$urlFiles{hashexplainxkcd} = $image_url;
+{
+	my $smbc = Smbc->new;
+	my ($image, $image_title, $image_url) = $smbc->fetch;
+	if($image) {
+		$anyisnew = 1;
+		$body = $body." http://www.smbc-comics.com<br>$image_title<br>";
+		$urlFiles{hashsmbc} = $image_url;
+		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
+	}
+}
+{
+	my $abstruse_goose = AbstruseGoose->new;
+	my ($image, $image_title, $image_url) = $abstruse_goose->fetch;
+	if($image) {
+		$anyisnew = 1;
+		$body = $body." http://www.abstrusegoose.com<br>$image_title<br>";
+		$urlFiles{hashAbstruseGoose} = $image_url;
+		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
+	}
 }
 
 if($anyisnew)
@@ -185,54 +153,3 @@ if($anyisnew)
 }
 
 DumpFile('comics.yaml', \%urlFiles);
-
-#print Dumper @fetchComics;
-sub parse_html {
-	my $wc = shift;
-	$failed = undef;
-	print $wc->[0], " failed to download. Try it with wget again!\n";
-	my $ret = system("wget -O localWebPage ".$wc->[0]);
-	my $lines;
-	if(0 == $ret) {
-		$lines = io("localWebPage")->slurp;
-		unlink("localWebPage");
-	}
-	else {
-		warn "Something went wrong with wget :-( Wget error code is: $ret";
-	}
-	
-	if($lines) {
-		my $pattern = @{$wc}[1];
-		if($lines =~ /$pattern/) {
-			print "found $pattern";
-			my $desiredPic = $1;
-			my $title = $2 // "";
-		
-			$title =~ s/&quot;/" /g;
-			$title =~ s/&#39;/' /g;
-
-			my $hashFileName = @{$wc}[2];
-			if($urlFiles{$hashFileName} ne $desiredPic) {
-				$anyisnew = 1;
-				my $command = "wget -O $hashFileName.png ".$desiredPic;
-				print $command;
-				
-       	        	system($command); # use wget to fetch comic
-
-       		        # store the new image url in the hash. Hash is stored in a file at the end of the script.
-                	$urlFiles{$hashFileName} = $desiredPic;
-				
-				# attach to email
-				if($title) {
-					$body = $body." @{$wc}[0]<br>$title<br>";
-				}
-				$mail->attach_file(
-				#	Type => 'image/png',
-				#	Path => "$hashFileName.png",
-					"$hashFileName.png",
-				#	Disposition => 'attachment'
-				) or die "Error adding @{$wc}[0] comic: $!\n";
-			}
-		}
-	}
-}
