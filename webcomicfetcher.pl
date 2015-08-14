@@ -106,7 +106,7 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 	my ($image, $image_url) = $commit_strip->fetch;
 	if($image) {
 		$anyisnew = 1;
-		$body = $body." http://www.commitstrip.com";
+		$body = $body." http://www.commitstrip.com<br>";
 		$urlFiles{hashcommitstrip} = $image_url;
 		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 	}
@@ -117,7 +117,7 @@ if($urlFiles{hashxkcd} ne $hashFileName) {
 	my ($image, $image_url) = $ape_not_monkey->fetch;
 	if($image) {
 		$anyisnew = 1;
-		$body = $body." http://www.apenotmonkey.com/comics";
+		$body = $body." http://www.apenotmonkey.com<br>";
 		$urlFiles{hashape} = $image_url;
 		$mail->attach_file($image) or $body .= " Could not add file '$image': $!";
 	}
