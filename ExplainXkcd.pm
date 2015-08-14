@@ -41,7 +41,7 @@ sub fetch {
 	my $self = shift;
 
 	my $last_comic_urls = LoadFile('comics.yaml');
-	my $last_url = $last_comic_urls->{hashexplainxkcd};
+	my $last_url = $last_comic_urls->{hashexplainxkcd} // "";
 
 	my $ua = Mojo::UserAgent->new;
 	my $response;
