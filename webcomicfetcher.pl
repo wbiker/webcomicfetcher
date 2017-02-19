@@ -70,7 +70,7 @@ my $body = "Comics:\n";
 
 #initialize email object
 my $mail = Email::Stuffer->new;
-$mail->to('wolfgang.banaston@gmail.com,thomas.reisinger@jku.at,armin.praher@sophos.com');
+$mail->to('wolfgang.banaston@gmail.com,armin.praher@sophos.com');
 $mail->from('wbiker@gmx.at');
 $mail->subject('Webcomics');
 
